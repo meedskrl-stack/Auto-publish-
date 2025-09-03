@@ -1,3 +1,4 @@
+from flask import Flask, request
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from telethon.sessions import StringSession
@@ -10,6 +11,10 @@ import threading
 import time
 from datetime import datetime, timedelta
 
+# إعداد Flask app
+app = Flask(__name__)
+
+# إعدادات البوت
 api_id = 25217515
 api_hash = "1bb27e5be73593e33fc735c1fbe0d855"
 token = "8438319213:AAEoJq5V2aexlllC7z6KxqI-piW6jj6tRHY"
@@ -35,7 +40,6 @@ admin_states = {}  # لتتبع حالة المطور
 posting_status = {}  # لتتبع حالة النشر لكل مستخدم
 
 bot = telebot.TeleBot(token)
-print("✅ البوت يعمل الآن")
 
 # تحميل وتخزين الاشتراكات
 def load_subscriptions():
@@ -159,7 +163,7 @@ def check_channel_subscription_decorator(func):
         # التحقق من الاشتراك في البوت
         is_subscribed, sub_data = check_subscription(user_id)
         if not is_subscribed:
-            bot.send_message(message.chat.id, f"⛔️ عذراً، يجب عليك الاشتراك لاستخدام البوت.\n📞 راسل المطور {DEVELOPER_USERNAME} للاشتراك.")
+            bot.send_message(message.chat.id, f"⛔️ عذراً، يجب عليك الاشترак لاستخدام البوت.\n📞 راسل المطور {DEVELOPER_USERNAME} للاشتراك.")
             return
             
         return func(message)
@@ -394,7 +398,7 @@ def handle_admin_messages(message):
             }
             save_subscriptions(subscriptions)
             
-            bot.send_message(message.chat.id, f"✅ تم تفعيل اشتراك المستخدم <code>{target_user_id}</code> لمدة {days} يوم.\n⏰ ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M:%S')}", parse_mode="html")
+            bot.send_message(message.chat.id, f"✅ تم تفعيل اشتراك المستخدم <code>{target_user_id</code> لمدة {days} يوم.\n⏰ ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M:%S')}", parse_mode="html")
             
             # إرسال إشعار للمستخدم
             try:
@@ -1403,8 +1407,35 @@ def back_to_main(call):
         parse_mode="html"
     )
 
+# Routes for Flask app
+@app.route('/')
+def home():
+    return "🤖 البوت يعمل بشكل طبيعي!"
+
+@app.route('/health')
+def health_check():
+    return "✅ البوت نشط ومستعد للعمل"
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return 'OK', 200
+    return 'Bad Request', 400
+
+def keep_alive():
+    """
+    دالة لإبقاء البوت نشطًا عن طريق تشغيل خادم ويب بسيط
+    """
+    print("🌐 خادم الويب يعمل على المنفذ 8080")
+
 # تشغيل البوت
 if __name__ == "__main__":
+    # تشغيل خادم الويب لإبقاء البوت نشطاً
+    keep_alive()
+    
     print("✅ البوت يعمل الآن")
     
     # تشغيل event loop في خلفية
@@ -1415,4 +1446,30 @@ if __name__ == "__main__":
     loop_thread = threading.Thread(target=run_loop, daemon=True)
     loop_thread.start()
     
-    bot.infinity_polling()
+    # إعداد webhook
+    try:
+        # احصل على رابط الويب من متغير البيئة (سيضبطه Render تلقائياً)
+        webhook_url = os.environ.get('RENDER_EXTERNAL_URL', '') + '/webhook'
+        
+        if webhook_url and webhook_url != '/webhook':
+            bot.remove_webhook()
+            time.sleep(1)
+            bot.set_webhook(url=webhook_url)
+            print(f"🌐 Webhook مضبوط على: {webhook_url}")
+        else:
+            print("⚠️  لم يتم تعيين رابط الويب، سيستخدم Polling كاحتياطي")
+            # بدء الاستطلاع كخيار احتياطي
+            polling_thread = threading.Thread(target=bot.infinity_polling)
+            polling_thread.daemon = True
+            polling_thread.start()
+            
+    except Exception as e:
+        print(f"❌ خطأ في إعداد webhook: {e}")
+        print("🔄 استخدام Polling كبديل...")
+        polling_thread = threading.Thread(target=bot.infinity_polling)
+        polling_thread.daemon = True
+        polling_thread.start()
+    
+    # إبقاء البرنامج الرئيسي يعمل
+    while True:
+        time.sleep(3600)  # انتظر ساعة ثم كرر
