@@ -398,7 +398,7 @@ def handle_admin_messages(message):
             }
             save_subscriptions(subscriptions)
             
-            bot.send_message(message.chat.id, f"✅ تم تفعيل اشتراك المستخدم <code>{target_user_id</code> لمدة {days} يوم.\n⏰ ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M:%S')}", parse_mode="html")
+            bot.send_message(message.chat.id, f"✅ تم تفعيل اشتراك المستخدم <code>{target_user_id}</code> لمدة {days} يوم.\n⏰ ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M:%S')}", parse_mode="html")
             
             # إرسال إشعار للمستخدم
             try:
