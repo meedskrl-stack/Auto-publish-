@@ -1,3 +1,27 @@
+# إصلاح عاجل لمشكلة imghdr في Python 3.13
+import sys
+try:
+    import imghdr
+except ModuleNotFoundError:
+    # إنشاء بديل لـ imghdr
+    class SimpleImghdr:
+        def what(self, filename):
+            if isinstance(filename, str):
+                if filename.endswith(('.jpg', '.jpeg')):
+                    return 'jpeg'
+                elif filename.endswith('.png'):
+                    return 'png'
+                elif filename.endswith('.gif'):
+                    return 'gif'
+                elif filename.endswith('.bmp'):
+                    return 'bmp'
+                elif filename.endswith('.webp'):
+                    return 'webp'
+            return None
+    sys.modules['imghdr'] = SimpleImghdr()
+    import imghdr
+
+# الآن استورد باقي المكتبات
 from flask import Flask, request
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
