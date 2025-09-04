@@ -1,4 +1,4 @@
-# إصلاح عاجل لمشكلة imghdr في Python 3.13
+# إصلاح لمشكلة imghdr في Python 3.13
 import sys
 try:
     import imghdr
@@ -42,33 +42,7 @@ app = Flask(__name__)
 api_id = 25217515
 api_hash = "1bb27e5be73593e33fc735c1fbe0d855"
 token = "8438319213:AAEoJq5V2aexlllC7z6KxqI-piW6jj6tRHY"
-#
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if request.method == 'POST':
-        print("📩 تم استلام POST request على / - توجيه إلى /webhook")
-        return webhook()  # توجيه الطلبات إلى webhook
-    return "🤖 البوت يعمل بشكل طبيعي!"
 
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    print("📩 تم استلام طلب ويب هوك على /webhook")
-    
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        print(f"📦 حجم البيانات: {len(json_string)} bytes")
-        
-        try:
-            update = telebot.types.Update.de_json(json_string)
-            bot.process_new_updates([update])
-            print("✅ تم معالجة التحديث بنجاح")
-            return 'OK', 200
-        except Exception as e:
-            print(f"❌ خطأ في معالجة التحديث: {e}")
-            return 'Error', 500
-    
-    print("❌ طلب غير صحيح")
-    return 'Bad Request', 400
 # تعريف المطور
 DEVELOPER_ID = 7115002714
 DEVELOPER_USERNAME = "@I_e_e_l"
@@ -213,7 +187,7 @@ def check_channel_subscription_decorator(func):
         # التحقق من الاشتراك في البوت
         is_subscribed, sub_data = check_subscription(user_id)
         if not is_subscribed:
-            bot.send_message(message.chat.id, f"⛔️ عذراً، يجب عليك الاشترак لاستخدام البوت.\n📞 راسل المطور {DEVELOPER_USERNAME} للاشتراك.")
+            bot.send_message(message.chat.id, f"⛔️ عذراً، يجب عليك الاشتراك لاستخدام البوت.\n📞 راسل المطور {DEVELOPER_USERNAME} للاشتراك.")
             return
             
         return func(message)
@@ -974,13 +948,13 @@ def set_message_callback(call):
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(InlineKeyboardButton(text="🔙 رجوع", callback_data="post_management"))
     
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text="<strong>📝 أرسل الرسالة التي تريد نشرها في المجموعات</strong>\n\n💡 يمكنك إرسال نص، صورة، أو أي نوع من المحتوى",
-        reply_markup=markup,
-        parse_mode="html"
-    )
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="<strong>📝 أرسل الرسالة التي تريد نشرها في المجموعات</strong>\n\n💡 يمكنك إرسال نص، صورة، أو أي نوع من المحتوى",
+            reply_markup=markup,
+            parse_mode="html"
+        )
 
 def handle_message_input(message, user_id):
     users = load_users()
@@ -1458,22 +1432,36 @@ def back_to_main(call):
     )
 
 # Routes for Flask app
-@app.route('/')
-def home():
+@app.route('/', methods=['GET', 'POST'])
+def main_home():
+    if request.method == 'POST':
+        print("📩 تم استلام POST request على / - توجيه إلى /webhook")
+        return telegram_webhook()
     return "🤖 البوت يعمل بشكل طبيعي!"
+
+@app.route('/webhook', methods=['POST'])
+def telegram_webhook():
+    print("📩 تم استلام طلب ويب هوك على /webhook")
+    
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        print(f"📦 حجم البيانات: {len(json_string)} bytes")
+        
+        try:
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            print("✅ تم معالجة التحديث بنجاح")
+            return 'OK', 200
+        except Exception as e:
+            print(f"❌ خطأ في معالجة التحديث: {e}")
+            return 'Error', 500
+    
+    print("❌ طلب غير صحيح")
+    return 'Bad Request', 400
 
 @app.route('/health')
 def health_check():
     return "✅ البوت نشط ومستعد للعمل"
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return 'OK', 200
-    return 'Bad Request', 400
 
 def keep_alive():
     """
@@ -1481,8 +1469,27 @@ def keep_alive():
     """
     print("🌐 خادم الويب يعمل على المنفذ 8080")
 
+# وظيفة لضبط الويب هوك تلقائياً
+def setup_webhook():
+    try:
+        WEBHOOK_URL = "https://auto-publish.onrender.com/webhook"
+        bot.remove_webhook()
+        time.sleep(2)
+        bot.set_webhook(url=WEBHOOK_URL)
+        print(f"✅ تم ضبط الويب هوك على: {WEBHOOK_URL}")
+        
+        # التحقق من الإعدادات
+        webhook_info = bot.get_webhook_info()
+        print(f"📊 معلومات الويب هوك: {webhook_info.url}")
+        
+    except Exception as e:
+        print(f"❌ خطأ في ضبط الويب هوك: {e}")
+
 # تشغيل البوت
 if __name__ == "__main__":
+    # ضبط الويب هوك تلقائياً
+    setup_webhook()
+    
     # تشغيل خادم الويب لإبقاء البوت نشطاً
     keep_alive()
     
@@ -1496,29 +1503,10 @@ if __name__ == "__main__":
     loop_thread = threading.Thread(target=run_loop, daemon=True)
     loop_thread.start()
     
-    # إعداد webhook
-    try:
-        # احصل على رابط الويب من متغير البيئة (سيضبطه Render تلقائياً)
-        webhook_url = os.environ.get('RENDER_EXTERNAL_URL', '') + '/webhook'
-        
-        if webhook_url and webhook_url != '/webhook':
-            bot.remove_webhook()
-            time.sleep(1)
-            bot.set_webhook(url=webhook_url)
-            print(f"🌐 Webhook مضبوط على: {webhook_url}")
-        else:
-            print("⚠️  لم يتم تعيين رابط الويب، سيستخدم Polling كاحتياطي")
-            # بدء الاستطلاع كخيار احتياطي
-            polling_thread = threading.Thread(target=bot.infinity_polling)
-            polling_thread.daemon = True
-            polling_thread.start()
-            
-    except Exception as e:
-        print(f"❌ خطأ في إعداد webhook: {e}")
-        print("🔄 استخدام Polling كبديل...")
-        polling_thread = threading.Thread(target=bot.infinity_polling)
-        polling_thread.daemon = True
-        polling_thread.start()
+    # بدء الاستطلاع كخيار احتياطي
+    polling_thread = threading.Thread(target=bot.infinity_polling)
+    polling_thread.daemon = True
+    polling_thread.start()
     
     # إبقاء البرنامج الرئيسي يعمل
     while True:
