@@ -42,7 +42,33 @@ app = Flask(__name__)
 api_id = 25217515
 api_hash = "1bb27e5be73593e33fc735c1fbe0d855"
 token = "8438319213:AAEoJq5V2aexlllC7z6KxqI-piW6jj6tRHY"
+#
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    if request.method == 'POST':
+        print("📩 تم استلام POST request على / - توجيه إلى /webhook")
+        return webhook()  # توجيه الطلبات إلى webhook
+    return "🤖 البوت يعمل بشكل طبيعي!"
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    print("📩 تم استلام طلب ويب هوك على /webhook")
+    
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        print(f"📦 حجم البيانات: {len(json_string)} bytes")
+        
+        try:
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            print("✅ تم معالجة التحديث بنجاح")
+            return 'OK', 200
+        except Exception as e:
+            print(f"❌ خطأ في معالجة التحديث: {e}")
+            return 'Error', 500
+    
+    print("❌ طلب غير صحيح")
+    return 'Bad Request', 400
 # تعريف المطور
 DEVELOPER_ID = 7115002714
 DEVELOPER_USERNAME = "@I_e_e_l"
